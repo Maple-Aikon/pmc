@@ -76,6 +76,10 @@ fn restart_process() {
             runner.set_crashed(*id).save();
             continue;
         } else {
+            let interval = config::read().daemon.interval;
+            log!("[daemon] waiting before restart", "name" => item.name, "interval" => interval);
+            sleep(Duration::from_millis(interval));
+
             runner.get(item.id).crashed();
             log!("[daemon] restarted", "name" => item.name, "id" => id, "crashes" => item.crash.value);
         }

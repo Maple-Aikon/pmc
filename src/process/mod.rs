@@ -549,14 +549,6 @@ impl Runner {
             kill_children(process_to_stop.children.clone());
             let _ = process_stop(pid_to_check); // Continue even if stopping fails
 
-            // waiting until Process is terminated
-            for _ in 0..50 {
-                match unix::NativeProcess::new(pid_to_check as u32) {
-                    Ok(_p) => thread::sleep(Duration::from_millis(100)),
-                    Err(_) => break,
-                }
-            }
-
             let process = self.process(id);
             process.running = false;
             process.crash.crashed = false;
@@ -858,14 +850,40 @@ pub fn process_stop(pid: i64) -> Result<(), String> {
     }
 
     // Stop parent process
-    match kill(Pid::from_raw(pid as i32), Signal::SIGTERM) {
+    let res = match kill(Pid::from_raw(pid as i32), Signal::SIGTERM) {
         Ok(_) => Ok(()),
         Err(nix::errno::Errno::ESRCH) => {
             // Process already terminated
-            Ok(())
+            return Ok(());
         }
         Err(err) => Err(format!("Failed to stop process {}: {:?}", pid, err)),
+    };
+
+    // Grace period: wait up to 5 seconds
+    let mut alive = true;
+    for _ in 0..50 {
+        match unix::NativeProcess::new(pid as u32) {
+            Ok(_) => thread::sleep(Duration::from_millis(100)),
+            Err(_) => {
+                alive = false;
+                break;
+            }
+        }
     }
+
+    // If still alive after 5s, send SIGKILL
+    if alive {
+        log::warn!("Process {} did not exit after 5s, sending SIGKILL", pid);
+        let _ = kill(Pid::from_raw(pid as i32), Signal::SIGKILL);
+        
+        // Also SIGKILL children just in case
+        let current_children = process_find_children(pid);
+        for child_pid in current_children {
+            let _ = kill(Pid::from_raw(child_pid as i32), Signal::SIGKILL);
+        }
+    }
+
+    res
 }
 
 /// Find the children of the process
