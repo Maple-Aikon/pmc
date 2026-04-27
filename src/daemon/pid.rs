@@ -30,7 +30,20 @@ pub fn exists() -> bool {
     fs::metadata(global!("pmc.pid")).is_ok()
 }
 pub fn running(pid: i32) -> bool {
-    unsafe { libc::kill(pid, 0) == 0 }
+    let status_path = format!("/proc/{}/status", pid);
+
+    match fs::read_to_string(&status_path) {
+        Ok(contents) => {
+            for line in contents.lines() {
+                if let Some(state_val) = line.strip_prefix("State:") {
+                    let trimmed = state_val.trim();
+                    return !trimmed.starts_with('Z');
+                }
+            }
+            true
+        }
+        Err(_) => false,
+    }
 }
 
 pub fn uptime() -> io::Result<DateTime<Utc>> {

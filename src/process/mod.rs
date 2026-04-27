@@ -954,6 +954,7 @@ pub fn process_find_children(parent_pid: i64) -> Vec<i64> {
 /// Run the process
 pub fn process_run(metadata: ProcessMetadata) -> Result<i64, String> {
     use std::fs::OpenOptions;
+    use std::os::unix::process::CommandExt;
     use std::process::{Command, Stdio};
 
     let log_base = format!("{}/{}", metadata.log_path, metadata.name.replace(' ', "_"));
@@ -975,8 +976,10 @@ pub fn process_run(metadata: ProcessMetadata) -> Result<i64, String> {
 
     // Execute process
     let mut cmd = Command::new(&metadata.shell);
+    let command = format!("exec {}", metadata.command);
+
     cmd.args(&metadata.args)
-        .arg(&metadata.command)
+        .arg(&command)
         .envs(metadata.env.iter().map(|env_var| {
             let parts: Vec<&str> = env_var.splitn(2, '=').collect();
             if parts.len() == 2 {
@@ -987,7 +990,8 @@ pub fn process_run(metadata: ProcessMetadata) -> Result<i64, String> {
         }))
         .stdout(Stdio::from(stdout_file))
         .stderr(Stdio::from(stderr_file))
-        .stdin(Stdio::null());
+        .stdin(Stdio::null())
+        .process_group(0);
 
     let child = cmd
         .spawn()

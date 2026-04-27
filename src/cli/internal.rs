@@ -9,6 +9,8 @@ use serde_json::json;
 use tokio::{runtime::Runtime, signal, sync::broadcast};
 use tokio_tungstenite::{connect_async, tungstenite::Message as WsMessage};
 
+use crate::daemon::pid;
+
 use pmc::{
     config, file,
     helpers::{self, ColoredString},
@@ -1023,7 +1025,7 @@ impl<'i> Internal<'i> {
                         }
                     }
 
-                    let status = if item.running {
+                    let status = if item.running && pid::running(item.pid as i32) {
                         "online   ".green().bold()
                     } else {
                         match item.crash.crashed {

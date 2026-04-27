@@ -134,7 +134,7 @@ pub fn health(format: &String) {
         && let Ok(process) = Process::new(process_id.get::<u32>())
     {
         pid = Some(process.pid() as i32);
-        uptime = Some(pid::uptime().unwrap());
+        uptime = pid::uptime().ok();
         memory_usage = process.memory_info().ok().map(MemoryInfo::from);
         cpu_percent = Some(get_process_cpu_usage_percentage(process_id.get::<i64>()));
     }
@@ -281,7 +281,9 @@ pub fn start(verbose: bool) {
             if api_enabled && let Ok(process) = Process::new(process::id()) {
                 DAEMON_CPU_PERCENTAGE
                     .observe(get_process_cpu_usage_percentage(process.pid() as i64));
-                DAEMON_MEM_USAGE.observe(process.memory_info().ok().unwrap().rss() as f64);
+                if let Ok(memory_info) = process.memory_info() {
+                    DAEMON_MEM_USAGE.observe(memory_info.rss() as f64);
+                }
             }
 
             then!(!Runner::new().is_empty(), restart_process());

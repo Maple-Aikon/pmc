@@ -71,9 +71,20 @@ pub fn write(dump: &Runner) {
         ),
     };
 
-    if let Err(err) = fs::write(global!("pmc.dump"), encoded) {
+    let path = global!("pmc.dump");
+    let temp_path = format!("{}.tmp", path);
+
+    if let Err(err) = fs::write(&temp_path, encoded) {
         crashln!(
             "{} Error writing dumpfile.\n{}",
+            *helpers::FAIL,
+            string!(err).white()
+        )
+    }
+
+    if let Err(err) = fs::rename(&temp_path, &path) {
+        crashln!(
+            "{} Error renaming dumpfile.\n{}",
             *helpers::FAIL,
             string!(err).white()
         )
