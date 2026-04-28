@@ -1,5 +1,4 @@
-use std::thread;
-use std::time::{Duration, SystemTime};
+use std::time::SystemTime;
 
 pub mod cpu;
 pub mod env;

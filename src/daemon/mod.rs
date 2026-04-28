@@ -266,7 +266,7 @@ pub fn start(verbose: bool) {
         let api_enabled = ENABLE_API.load(Ordering::Acquire);
         let ui_enabled = ENABLE_WEBUI.load(Ordering::Acquire);
 
-        unsafe { libc::signal(libc::SIGTERM, handle_termination_signal as usize) };
+        unsafe { libc::signal(libc::SIGTERM, handle_termination_signal as *const () as usize) };
         DAEMON_START_TIME.set(Utc::now().timestamp_millis() as f64);
 
         pid::write(process::id());
