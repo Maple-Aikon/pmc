@@ -376,12 +376,14 @@ impl Runner {
                     err
                 );
             } else {
-                let mut temp_env = process
-                    .env
-                    .iter()
-                    .map(|(key, value)| format!("{}={}", key, value))
-                    .collect::<Vec<String>>();
-                temp_env.extend(unix::env());
+                let mut temp_env = unix::env();
+                temp_env.extend(
+                    process
+                        .env
+                        .iter()
+                        .map(|(key, value)| format!("{}={}", key, value))
+                        .collect::<Vec<String>>(),
+                );
 
                 process.pid = process_run(ProcessMetadata {
                     args: config.args,
