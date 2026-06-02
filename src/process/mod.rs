@@ -399,7 +399,6 @@ impl Runner {
                 process.children = vec![];
                 process.started = Utc::now();
                 process.crash.crashed = false;
-                process.env.extend(env::vars().collect::<Env>());
 
                 then!(dead, process.restarts += 1);
                 then!(dead, process.crash.value += 1);
